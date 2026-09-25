@@ -74,3 +74,33 @@ def scale_splits(X_train, X_val, X_test):
 
     print(pd.DataFrame(X_train_sc, columns=X_train.columns).head())
     return X_train_sc, X_val_sc, X_test_sc, scaler
+
+def split_xy(df, target="sales"):
+    """Separate features and target. Returns y = None if the target column is missing."""
+    if target in df.columns:
+        return df.drop(columns=target), df[target]
+    return df.copy(), None
+
+
+def scale_data(X, scaler=None):
+    """Scale a single DataFrame.
+    - scaler=None  -> fit a new scaler on X (use only for training data)
+    - scaler given -> reuse the already-fitted scaler (use for new data)
+    """
+    if scaler is None:
+        scaler = StandardScaler()
+        X_sc = scaler.fit_transform(X)
+    else:
+        X = X[scaler.feature_names_in_]      # same column order as training
+        X_sc = scaler.transform(X)
+
+    print(pd.DataFrame(X_sc, columns=X.columns).head())
+    return X_sc, scaler
+
+
+def prepare_data(df, target="sales", scaler=None, cols_to_drop=COLS_TO_DROP):
+    """Full pipeline on one DataFrame: split X/y -> clean -> scale."""
+    X, y = split_xy(df, target)
+    X_clean = clean_data(X, cols_to_drop)
+    X_sc, scaler = scale_data(X_clean, scaler)
+    return X_sc, y, scaler
